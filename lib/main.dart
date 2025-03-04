@@ -1,13 +1,21 @@
-import 'package:aground/WebViewPage.dart';
+// main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:aground/WebViewPage.dart';
 import 'package:aground/BluetoothPage.dart';
 
 void main() {
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Color.fromARGB(255, 238, 239, 243),
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  ));
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +23,7 @@ class MyApp extends StatelessWidget {
       title: 'Aground App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 238, 239, 243),
         useMaterial3: true,
       ),
       home: const MainScreen(),
@@ -23,45 +32,46 @@ class MyApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0; // 현재 선택된 네비게이션 바 인덱스
+  // 화면 목록: 0 -> WebViewPage
+  late List<Widget> _screens; // List를 late로 선언
 
-  final List<Widget> _screens = [
-    const WebViewPage(), // 첫 번째 화면: 웹뷰 페이지
-    BluetoothPage(), // 두 번째 화면: 블루투스 페이지
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // initState 내에서 _screens 초기화
+    _screens = [
+      WebViewPage(onBluetoothRequest: _switchToBluetooth), // 웹뷰 화면, 콜백 전달
+    ];
+  }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index; // 선택된 인덱스 변경
-    });
+  // 웹뷰에서 블루투스 화면으로 전환 요청 시 호출되는 함수
+  void _switchToBluetooth(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BluetoothPage()), // 블루투스 페이지 푸시
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex], // 선택된 페이지 표시
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Colors.deepPurple, // 선택된 아이템 색상
-        unselectedItemColor: Colors.grey, // 선택되지 않은 아이템 색상
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '메인',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bluetooth),
-            label: '블루투스',
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color.fromARGB(255, 238, 239, 243),
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 238, 239, 243),
+        body: SafeArea(
+          child: _screens[0], // 웹뷰 화면만 표시
+        ),
       ),
     );
   }

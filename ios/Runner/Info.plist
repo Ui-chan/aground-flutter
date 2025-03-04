@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -24,20 +26,28 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	
+	<!-- 📌 블루투스 및 위치 권한 -->
 	<key>NSBluetoothAlwaysUsageDescription</key>
-    <string>Need BLE permission</string>
-    <key>NSBluetoothPeripheralUsageDescription</key>
-    <string>Need BLE permission</string>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Need Location permission</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>Need Location permission</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Need Location permission</string>
+	<string>이 앱은 블루투스 기기와 연결하기 위해 블루투스 권한이 필요합니다.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>이 앱은 블루투스 장치를 검색 및 연결하기 위해 블루투스 권한이 필요합니다.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>이 앱은 블루투스 스캔을 위해 위치 권한이 필요합니다.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>이 앱은 블루투스 기능을 위해 위치 권한이 필요합니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>이 앱은 블루투스 스캔을 위해 위치 권한이 필요합니다.</string>
+
+	<!-- 📌 iOS 앱 설정 -->
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+
+	<!-- 📌 지원하는 화면 방향 -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -51,9 +61,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 </dict>
 </plist>

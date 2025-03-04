@@ -1,7 +1,37 @@
 PODS:
-  - Flutter (1.0.0)
-  - flutter_blue_plus (0.0.1):
+  - AFNetworking (4.0.1):
+    - AFNetworking/NSURLSession (= 4.0.1)
+    - AFNetworking/Reachability (= 4.0.1)
+    - AFNetworking/Security (= 4.0.1)
+    - AFNetworking/Serialization (= 4.0.1)
+    - AFNetworking/UIKit (= 4.0.1)
+  - AFNetworking/NSURLSession (4.0.1):
+    - AFNetworking/Reachability
+    - AFNetworking/Security
+    - AFNetworking/Serialization
+  - AFNetworking/Reachability (4.0.1)
+  - AFNetworking/Security (4.0.1)
+  - AFNetworking/Serialization (4.0.1)
+  - AFNetworking/UIKit (4.0.1):
+    - AFNetworking/NSURLSession
+  - amplify_secure_storage (0.0.1):
     - Flutter
+  - aws_s3_ios (0.0.1):
+    - AFNetworking
+    - AWSS3
+    - FileMD5Hash (~> 2.0)
+    - Flutter
+  - AWSCore (2.40.1)
+  - AWSS3 (2.40.1):
+    - AWSCore (= 2.40.1)
+  - FileMD5Hash (2.0.0)
+  - Flutter (1.0.0)
+  - flutter_blue_plus_darwin (0.0.2):
+    - Flutter
+    - FlutterMacOS
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
   - webview_flutter_wkwebview (0.0.1):
@@ -9,27 +39,50 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - amplify_secure_storage (from `.symlinks/plugins/amplify_secure_storage/ios`)
+  - aws_s3_ios (from `.symlinks/plugins/aws_s3_ios/ios`)
   - Flutter (from `Flutter`)
-  - flutter_blue_plus (from `.symlinks/plugins/flutter_blue_plus/ios`)
+  - flutter_blue_plus_darwin (from `.symlinks/plugins/flutter_blue_plus_darwin/darwin`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
+SPEC REPOS:
+  trunk:
+    - AFNetworking
+    - AWSCore
+    - AWSS3
+    - FileMD5Hash
+
 EXTERNAL SOURCES:
+  amplify_secure_storage:
+    :path: ".symlinks/plugins/amplify_secure_storage/ios"
+  aws_s3_ios:
+    :path: ".symlinks/plugins/aws_s3_ios/ios"
   Flutter:
     :path: Flutter
-  flutter_blue_plus:
-    :path: ".symlinks/plugins/flutter_blue_plus/ios"
+  flutter_blue_plus_darwin:
+    :path: ".symlinks/plugins/flutter_blue_plus_darwin/darwin"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   webview_flutter_wkwebview:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
+  AFNetworking: 3bd23d814e976cd148d7d44c3ab78017b744cd58
+  amplify_secure_storage: 3edc30177ffefbcee786c408a21c02f8ab9f168e
+  aws_s3_ios: d6cc205b39802025cf4d43cf7927159e13816ef0
+  AWSCore: 29c85b2be07489b459cc17060b6354e9ba0f96a0
+  AWSS3: 29e7d0e5d77af1ce97c91424d7b86aa1b0bf69b6
+  FileMD5Hash: 3ed69cc19a21ff4d30ae8833fc104275ad2c7de0
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_blue_plus: 4837da7d00cf5d441fdd6635b3a57f936778ea96
-  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  webview_flutter_wkwebview: 0982481e3d9c78fd5c6f62a002fcd24fc791f1e4
+  flutter_blue_plus_darwin: 09444a26fb6bdef523e55b68fc1c59af5a877ea6
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  webview_flutter_wkwebview: 1821ceac936eba6f7984d89a9f3bcb4dea99ebb2
 
-PODFILE CHECKSUM: 819463e6a0290f5a72f145ba7cde16e8b6ef0796
+PODFILE CHECKSUM: a57f30d18f102dd3ce366b1d62a55ecbef2158e5
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

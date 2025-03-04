@@ -33,11 +33,16 @@ dependencies:
   flutter_blue_plus: ^1.34.5
   permission_handler: ^11.3.1
   webview_flutter: ^4.10.0
+  aws_s3_plugin: ^0.0.1
+  http: ^0.13.5
 
+  
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  amplify_flutter: ^2.6.0
+  amplify_storage_s3: ^2.6.0
 
 dev_dependencies:
   flutter_test:
@@ -48,7 +53,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
