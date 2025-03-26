@@ -61,36 +61,46 @@ class _BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-  void scanForDevices() {
-    try {
-      print("🔵 [DEBUG] 블루투스 검색 시작...");
+void scanForDevices() {
+  try {
+    print("🔵 [DEBUG] 블루투스 검색 시작...");
+    setState(() {
+      _scanResults.clear();
+    });
+
+    // 검색 시작 (timeout 제거)
+    FlutterBluePlus.startScan();
+
+    _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
       setState(() {
-        _scanResults.clear();
+        // "AGROUNDS_"로 시작하는 디바이스만 필터링
+        _scanResults = results.where((result) => result.device.name.startsWith("AGROUNDS_")).toList();
       });
 
-      FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
+      for (var result in _scanResults) {
+        print("🔍 [DEBUG] 발견된 디바이스: ${result.device.name} (ID: ${result.device.remoteId})");
 
-      _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
-        setState(() {
-          _scanResults = results;
-        });
-
-        for (var result in results) {
-          print("🔍 [DEBUG] 발견된 디바이스: ${result.device.name} (ID: ${result.device.remoteId})");
+        // "AGROUNDS_"로 시작하는 디바이스를 찾으면 검색 중지
+        if (result.device.name.startsWith("AGROUNDS_")) {
+          print("✅ [DEBUG] 목표 디바이스 발견: ${result.device.name}");
+          FlutterBluePlus.stopScan(); // 검색 중지
+          _scanResultsSubscription?.cancel();
+          break;
         }
-      });
+      }
+    });
 
-      FlutterBluePlus.isScanning
-          .where((isScanning) => !isScanning)
-          .first
-          .then((_) {
-        _scanResultsSubscription?.cancel();
-        print("✅ [DEBUG] 블루투스 검색 완료. 총 ${_scanResults.length}개 디바이스 발견됨.");
-      });
-    } catch (e) {
-      print("❌ [ERROR] 블루투스 검색 중 오류 발생: $e");
-    }
+    FlutterBluePlus.isScanning.where((isScanning) => !isScanning).first.then((_) {
+      print("✅ [DEBUG] 블루투스 검색 완료. 총 ${_scanResults.length}개 디바이스 발견됨.");
+    });
+  } catch (e) {
+    print("❌ [ERROR] 블루투스 검색 중 오류 발생: $e");
   }
+}
+
+
+
+
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
@@ -202,7 +212,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
           print("🏁 [DEBUG] 최종 응답: $fullResponse");
           List<String> fileList = fullResponse
               .split(',')
-              .where((file) => file.trim().endsWith('.bin'))
+              // .where((file) => file.trim().endsWith('.bin'))
               .toList();
           setState(() {
             responseText = fullResponse;
@@ -225,7 +235,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
       await _commandCharacteristic!.write(utf8.encode("list"));
 
       // 5초 후에도 응답이 완료되지 않으면 타임아웃 처리
-      await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(Duration(seconds: 20));
       if (!isResponseComplete) {
         print("⏰ [DEBUG] 응답 타임아웃");
         _responseSubscription?.cancel();
