@@ -6,6 +6,17 @@ class DataListPage extends StatelessWidget {
 
   const DataListPage({Key? key, required this.fileList, required this.sendReadCommand}) : super(key: key);
 
+  /// 파일 이름을 DateTime 형식으로 변환하는 함수
+  DateTime parseFileTime(String fileTime) {
+    final year = "20${fileTime.substring(0, 2)}";
+    final month = fileTime.substring(2, 4);
+    final day = fileTime.substring(4, 6);
+    final hour = fileTime.substring(6, 8);
+    final minute = fileTime.substring(8, 10);
+
+    return DateTime.parse("$year-$month-$day $hour:$minute:00");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,6 +62,15 @@ class DataListPage extends StatelessWidget {
                       itemCount: fileList.length,
                       itemBuilder: (context, index) {
                         final fileName = fileList[index];
+                        final parts = fileName.split('|');
+                        final startTimeString = parts[0].substring(0, 12);
+                        final endTimeString = parts[1];
+
+                        final startTime = parseFileTime(startTimeString);
+                        final endTime = parseFileTime(endTimeString);
+
+                        final playDuration = endTime.difference(startTime).inMinutes;
+
                         return InkWell(
                           onTap: () {
                             showDialog(
@@ -62,7 +82,10 @@ class DataListPage extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text('파일명: $fileName'),
+                                      Text('파일명: $fileName', style: const TextStyle(fontSize: 14)),
+                                      Text('시작 시간: ${startTime.toLocal()}', style: const TextStyle(fontSize: 14)),
+                                      Text('종료 시간: ${endTime.toLocal()}', style: const TextStyle(fontSize: 14)),
+                                      Text('플레이 시간: $playDuration분', style: const TextStyle(fontSize: 14)),
                                     ],
                                   ),
                                   actions: <Widget>[
@@ -76,26 +99,7 @@ class DataListPage extends StatelessWidget {
                                       child: const Text('전송'),
                                       onPressed: () {
                                         Navigator.of(context).pop();
-                                        // 파일 이름에서 확장자 제거 (.bin)
-                                        String fileNameWithoutExtension = fileName.split('.').first.split('|').first;
-                                        print("✅ fileNameWithoutExtension: "  + fileNameWithoutExtension);
-                                        String fileNameWithoutbin = fileName.split('|')[1];
-
-                                        // 시작 시간과 종료 시간을 DateTime 형식으로 변환
-                                        DateTime startTime = DateTime.parse('25${fileNameWithoutExtension.substring(0, 6)} ${fileNameWithoutExtension.substring(6, 8)}:${fileNameWithoutExtension.substring(8, 10)}');
-                                        DateTime endTime = DateTime.parse('25${fileNameWithoutbin.substring(0, 6)} ${fileNameWithoutbin.substring(6, 8)}:${fileNameWithoutbin.substring(8, 10)}');
-
-                                        // 시간 차이 계산
-                                        Duration timeDifference = endTime.difference(startTime);
-
-                                        // 조건에 따른 명령어 전송
-                                        if (timeDifference.inMinutes >= 2) {
-                                          sendReadCommand(fileNameWithoutExtension);
-                                        } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('❌ 2분 이상의 시간 차이가 필요합니다.')),
-                                          );
-                                        }
+                                        sendReadCommand(parts[0].split('.').first);
                                       },
                                     ),
                                   ],
@@ -116,12 +120,38 @@ class DataListPage extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            child: Center(
-                              child: Text(
-                                fileName,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
-                              ),
+                            child: Stack(
+                              children: [
+                                // 왼쪽 상단 날짜 및 시간 정보
+                                Positioned(
+                                  top: 16,
+                                  left: 16,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // 날짜 표시 (YYYY.MM.DD)
+                                      Text(
+                                        '${startTime.year}.${startTime.month.toString().padLeft(2, '0')}.${startTime.day.toString().padLeft(2, '0')}',
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                      ),
+                                      // 시작-종료 시간 표시 (HH:mm - HH:mm)
+                                      Text(
+                                        '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}',
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // 오른쪽 하단 플레이 시간 표시
+                                Positioned(
+                                  bottom: 16,
+                                  right: 16,
+                                  child: Text(
+                                    '$playDuration분',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
