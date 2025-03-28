@@ -77,8 +77,25 @@ class DataListPage extends StatelessWidget {
                                       onPressed: () {
                                         Navigator.of(context).pop();
                                         // 파일 이름에서 확장자 제거 (.bin)
-                                        String fileNameWithoutExtension = fileName.split('.').first;
-                                        sendReadCommand(fileNameWithoutExtension); // 콜백 함수 호출
+                                        String fileNameWithoutExtension = fileName.split('.').first.split('|').first;
+                                        print("✅ fileNameWithoutExtension: "  + fileNameWithoutExtension);
+                                        String fileNameWithoutbin = fileName.split('|')[1];
+
+                                        // 시작 시간과 종료 시간을 DateTime 형식으로 변환
+                                        DateTime startTime = DateTime.parse('25${fileNameWithoutExtension.substring(0, 6)} ${fileNameWithoutExtension.substring(6, 8)}:${fileNameWithoutExtension.substring(8, 10)}');
+                                        DateTime endTime = DateTime.parse('25${fileNameWithoutbin.substring(0, 6)} ${fileNameWithoutbin.substring(6, 8)}:${fileNameWithoutbin.substring(8, 10)}');
+
+                                        // 시간 차이 계산
+                                        Duration timeDifference = endTime.difference(startTime);
+
+                                        // 조건에 따른 명령어 전송
+                                        if (timeDifference.inMinutes >= 2) {
+                                          sendReadCommand(fileNameWithoutExtension);
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('❌ 2분 이상의 시간 차이가 필요합니다.')),
+                                          );
+                                        }
                                       },
                                     ),
                                   ],

@@ -245,86 +245,97 @@ void scanForDevices() {
     }
   }
 
-  Future<void> sendReadCommand(String fileName) async {
-    if (_connectedDevice == null || _commandCharacteristic == null || _responseCharacteristic == null) {
-      print("❌ [ERROR] 블루투스 연결 또는 특성이 설정되지 않았습니다.");
-      return;
-    }
 
-    try {
-      final command = "read,/$fileName.bin"; // 파일 확장자 다시 추가
-      print("🔵 [DEBUG] '$command' 명령어 전송 중...");
-      await _commandCharacteristic!.write(utf8.encode(command));
-
-      // 이전에 구독중인 스트림이 있다면 취소
-      await _responseSubscription?.cancel();
-
-      // 새 스트림 구독 시작
-      _responseSubscription = _responseCharacteristic!.value.listen((value) async {
-        // GPS 데이터 변환 및 출력
-        List<GPSData> gpsDataList = parseGPSData(value);
-        if (gpsDataList.isNotEmpty) {
-          // 파일명에서 확장자 제거 (예: 2502211355.bin -> 2502211355)
-          String baseName = fileName; // 변경된 파일 이름 사용
-
-          // Image URL 생성 (WebView에서 받아온 URL 사용)
-          String? imageUrl = widget.imageUrl;
-          String? userCode = widget.userCode;
-
-          // 추출된 Bluetooth 장치 번호 가져오기
-          String? bluetoothDeviceNumber = _bluetoothDeviceNumber;
-
-          // GPS 데이터를 텍스트로 변환
-          // String gpsDataText = gpsDataList.map((gpsData) => "$baseName/${gpsData.latitude}/${gpsData.longitude}").join("\n");
-          String gpsDataText = gpsDataList.map((gpsData) => "${bluetoothDeviceNumber}/$baseName/${gpsData.latitude}/${gpsData.longitude}").join("\n");
-
-
-          // HTTP POST 요청을 사용하여 텍스트 파일 저장
-          try {
-            if (imageUrl != null && userCode != null && bluetoothDeviceNumber != null) {
-              // S3 버킷에 저장할 파일 경로 및 이름 설정
-              // final String filePath = imageUrl + "/gps.txt"; // 이 부분을 수정
-              final String filePath = imageUrl + "${userCode}_$fileName.txt"; // 숫자_userCode_파일명.txt로 저장
-
-              final response = await http.put(
-                Uri.parse(filePath), // WebView에서 받아온 URL
-                headers: {"Content-Type": "text/plain"},
-                body: gpsDataText,
-              );
-
-              if (response.statusCode == 200) {
-                print("✅ [DEBUG] 텍스트 파일 저장 성공: $imageUrl");
-              } else {
-                print("❌ [ERROR] 텍스트 파일 저장 실패 (Status Code: ${response.statusCode}): $imageUrl");
-                print("❌ [ERROR] Response body: ${response.body}"); // 응답 내용 로깅
-              }
-            } else {
-              print("❌ [ERROR] Image URL, User Code, or Bluetooth Device Number is null.");
-            }
-          } catch (e) {
-            print("❌ [ERROR] HTTP POST 요청 중 오류 발생: $e");
-          }
-
-          // 지정된 형식으로 출력
-          gpsDataList.forEach((gpsData) {
-            print("✅ [DEBUG] $baseName/${gpsData.latitude}/${gpsData.longitude}");
-          });
-        }
-      }, onDone: () {
-        // 스트림 완료 시 리스너 취소
-        print("✅ [DEBUG] 스트림 완료");
-        _responseSubscription?.cancel();
-      }, onError: (error) {
-        // 오류 발생 시 리스너 취소
-        print("❌ [ERROR] 스트림 오류: $error");
-        _responseSubscription?.cancel();
-      });
-    } catch (e) {
-      print("❌ [ERROR] 'read' 명령어 전송 중 오류 발생: $e");
-      // sendReadCommand 함수 자체에서 에러가 발생한 경우에도 리스너를 취소
-      await _responseSubscription?.cancel();
-    }
+Future<void> sendReadCommand(String fileName) async {
+  if (_connectedDevice == null || _commandCharacteristic == null || _responseCharacteristic == null) {
+    print("❌ [ERROR] 블루투스 연결 또는 특성이 설정되지 않았습니다.");
+    return;
   }
+
+  String fullGPSDataText = ""; // 모든 GPS 데이터를 저장할 변수
+  String? imageUrl = widget.imageUrl;
+  String? userCode = widget.userCode;
+
+  try {
+    final command = "read,/$fileName.bin"; // 파일 확장자 다시 추가
+    print("🔵 [DEBUG] '$command' 명령어 전송 중...");
+    await _commandCharacteristic!.write(utf8.encode(command));
+
+    // 이전에 구독중인 스트림이 있다면 취소
+    await _responseSubscription?.cancel();
+
+    // 마지막 데이터 수신 시간을 기록할 변수
+    DateTime lastDataReceivedTime = DateTime.now();
+
+    // 스트림 종료 여부를 확인할 변수
+    bool isStreamClosed = false;
+
+    _responseSubscription = _responseCharacteristic!.value.listen((value) async {
+      // GPS 데이터 변환 및 출력
+      List<GPSData> gpsDataList = parseGPSData(value);
+      if (gpsDataList.isNotEmpty) {
+        // 파일명에서 확장자 제거 (예: 2502211355.bin -> 2502211355)
+        String baseName = fileName; // 변경된 파일 이름 사용
+
+        // 추출된 Bluetooth 장치 번호 가져오기
+        String? bluetoothDeviceNumber = _bluetoothDeviceNumber;
+
+        // GPS 데이터를 텍스트로 변환
+        String gpsDataText = gpsDataList.map((gpsData) => "${bluetoothDeviceNumber}/$baseName/${gpsData.latitude}/${gpsData.longitude}").join("\n");
+
+        fullGPSDataText += gpsDataText; // 모든 GPS 데이터를 하나의 문자열에 추가
+
+        // 지정된 형식으로 출력
+        gpsDataList.forEach((gpsData) {
+          print("✅ [DEBUG] $baseName/${gpsData.latitude}/${gpsData.longitude}");
+        });
+
+        // 마지막 데이터 수신 시간 갱신
+        lastDataReceivedTime = DateTime.now();
+      }
+
+      fullGPSDataText +="\n";
+    }, onDone: () async {
+      print("✅ [DEBUG] 스트림 완료");
+      _responseSubscription?.cancel();
+      isStreamClosed = true;
+    }, onError: (error) {
+      print("❌ [ERROR] 스트림 오류: $error");
+      _responseSubscription?.cancel();
+      isStreamClosed = true;
+    });
+
+    // 1초 동안 데이터가 수신되지 않으면 스트림을 종료
+    Timer.periodic(Duration(seconds: 1), (timer) async {
+      if (DateTime.now().difference(lastDataReceivedTime).inSeconds >= 1 && !isStreamClosed) {
+        await _responseSubscription?.cancel();
+        isStreamClosed = true;
+        timer.cancel();
+
+        print("✅ [DEBUG] 스트림 종료 후 데이터 업로드 시작");
+        final String filePath = "${imageUrl}${userCode}_$fileName.txt";
+        final response = await http.put(
+          Uri.parse(filePath),
+          headers: {"Content-Type": "text/plain"},
+          body: fullGPSDataText,
+        ).timeout(Duration(seconds: 30));
+
+        if (response.statusCode == 200) {
+          print("✅ [DEBUG] 텍스트 파일 저장 성공: ${imageUrl}");
+        } else {
+          print("❌ [ERROR] 텍스트 파일 저장 실패 (Status Code: ${response.statusCode}): ${imageUrl}");
+          print("❌ [ERROR] Response body: ${response.body}");
+        }
+      }
+    });
+  } catch (e) {
+    print("❌ [ERROR] 'read' 명령어 전송 중 오류 발생: $e");
+    await _responseSubscription?.cancel();
+  }
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
