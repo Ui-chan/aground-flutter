@@ -30,7 +30,9 @@ class _BluetoothPageState extends State<BluetoothPage> {
   BluetoothCharacteristic? _responseCharacteristic;
   String responseText = "No response yet";
   bool isDeviceConnected = false;
+  bool isScanning = false; // 검색 중인지 여부
   String? _bluetoothDeviceNumber; // 추출된 Bluetooth 장치 번호
+  String connectionStatus = ""; // 연결 상태 ("success", "failure")
 
   @override
   void initState() {
@@ -61,46 +63,43 @@ class _BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-void scanForDevices() {
-  try {
-    print("🔵 [DEBUG] 블루투스 검색 시작...");
-    setState(() {
-      _scanResults.clear();
-    });
-
-    // 검색 시작
-    FlutterBluePlus.startScan();
-
-    _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
+  void scanForDevices() {
+    try {
+      print("🔵 [DEBUG] 블루투스 검색 시작...");
       setState(() {
-        for (var result in results) {
-          // "AGROUNDS_"로 시작하는 디바이스만 필터링
-          if (result.device.name.startsWith("AGROUNDS_")) {
-            // 중복 여부 확인 후 추가
-            if (!_scanResults.any((r) => r.device.remoteId == result.device.remoteId)) {
-              _scanResults.add(result);
-              print("🔍 [DEBUG] 발견된 디바이스: ${result.device.name} (ID: ${result.device.remoteId})");
+        isScanning = true;
+        _scanResults.clear(); // 이전 결과 초기화
+        connectionStatus = ""; // 연결 상태 초기화
+      });
+
+      FlutterBluePlus.startScan();
+
+      _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
+        setState(() {
+          for (var result in results) {
+            if (result.device.name.startsWith("AGROUNDS_")) {
+              // 중복 제거
+              if (!_scanResults.any((r) => r.device.remoteId == result.device.remoteId)) {
+                _scanResults.add(result);
+              }
             }
           }
-        }
+        });
       });
-    });
 
-    // 예: 10초 후 검색 종료
-    Future.delayed(const Duration(seconds: 10)).then((_) {
-      FlutterBluePlus.stopScan();
-      _scanResultsSubscription?.cancel();
-      print("✅ [DEBUG] 블루투스 검색 완료. 총 ${_scanResults.length}개 디바이스 발견됨.");
-    });
-  } catch (e) {
-    print("❌ [ERROR] 블루투스 검색 중 오류 발생: $e");
+      Future.delayed(const Duration(seconds: 3)).then((_) {
+        FlutterBluePlus.stopScan();
+        _scanResultsSubscription?.cancel();
+        setState(() {
+          isScanning = false;
+          connectionStatus = _scanResults.isEmpty ? "failure" : "";
+        });
+        print("✅ [DEBUG] 블루투스 검색 완료. 총 ${_scanResults.length}개 디바이스 발견됨.");
+      });
+    } catch (e) {
+      print("❌ [ERROR] 블루투스 검색 중 오류 발생: $e");
+    }
   }
-}
-
-
-
-
-
 
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
@@ -118,6 +117,7 @@ void scanForDevices() {
       setState(() {
         _connectedDevice = device;
         isDeviceConnected = true;
+        connectionStatus = "success";
       });
 
       print("✅ [DEBUG] ${device.name} 연결 성공!");
@@ -144,6 +144,9 @@ void scanForDevices() {
       }
     } catch (e) {
       print("❌ [ERROR] ${device.name} 연결 실패: $e");
+      setState(() {
+        connectionStatus = "failure";
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ ${device.name} 연결 실패: $e"), backgroundColor: Colors.red),
       );
@@ -245,143 +248,173 @@ void scanForDevices() {
     }
   }
 
+  Future<void> sendReadCommand(String fileName) async {
+    if (_connectedDevice == null || _commandCharacteristic == null || _responseCharacteristic == null) {
+      print("❌ [ERROR] 블루투스 연결 또는 특성이 설정되지 않았습니다.");
+      return;
+    }
 
-Future<void> sendReadCommand(String fileName) async {
-  if (_connectedDevice == null || _commandCharacteristic == null || _responseCharacteristic == null) {
-    print("❌ [ERROR] 블루투스 연결 또는 특성이 설정되지 않았습니다.");
-    return;
-  }
+    String fullGPSDataText = ""; // 모든 GPS 데이터를 저장할 변수
+    String? imageUrl = widget.imageUrl;
+    String? userCode = widget.userCode;
 
-  String fullGPSDataText = ""; // 모든 GPS 데이터를 저장할 변수
-  String? imageUrl = widget.imageUrl;
-  String? userCode = widget.userCode;
+    try {
+      final command = "read,/$fileName.bin"; // 파일 확장자 다시 추가
+      print("🔵 [DEBUG] '$command' 명령어 전송 중...");
+      await _commandCharacteristic!.write(utf8.encode(command));
 
-  try {
-    final command = "read,/$fileName.bin"; // 파일 확장자 다시 추가
-    print("🔵 [DEBUG] '$command' 명령어 전송 중...");
-    await _commandCharacteristic!.write(utf8.encode(command));
+      // 이전에 구독중인 스트림이 있다면 취소
+      await _responseSubscription?.cancel();
 
-    // 이전에 구독중인 스트림이 있다면 취소
-    await _responseSubscription?.cancel();
+      // 마지막 데이터 수신 시간을 기록할 변수
+      DateTime lastDataReceivedTime = DateTime.now();
 
-    // 마지막 데이터 수신 시간을 기록할 변수
-    DateTime lastDataReceivedTime = DateTime.now();
+      // 스트림 종료 여부를 확인할 변수
+      bool isStreamClosed = false;
 
-    // 스트림 종료 여부를 확인할 변수
-    bool isStreamClosed = false;
+      _responseSubscription = _responseCharacteristic!.value.listen((value) async {
+        // GPS 데이터 변환 및 출력
+        List<GPSData> gpsDataList = parseGPSData(value);
+        if (gpsDataList.isNotEmpty) {
+          // 파일명에서 확장자 제거 (예: 2502211355.bin -> 2502211355)
+          String baseName = fileName; // 변경된 파일 이름 사용
 
-    _responseSubscription = _responseCharacteristic!.value.listen((value) async {
-      // GPS 데이터 변환 및 출력
-      List<GPSData> gpsDataList = parseGPSData(value);
-      if (gpsDataList.isNotEmpty) {
-        // 파일명에서 확장자 제거 (예: 2502211355.bin -> 2502211355)
-        String baseName = fileName; // 변경된 파일 이름 사용
+          // 추출된 Bluetooth 장치 번호 가져오기
+          String? bluetoothDeviceNumber = _bluetoothDeviceNumber;
 
-        // 추출된 Bluetooth 장치 번호 가져오기
-        String? bluetoothDeviceNumber = _bluetoothDeviceNumber;
+          // GPS 데이터를 텍스트로 변환
+          String gpsDataText = gpsDataList.map((gpsData) => "${bluetoothDeviceNumber}/$baseName/${gpsData.latitude}/${gpsData.longitude}").join("\n");
 
-        // GPS 데이터를 텍스트로 변환
-        String gpsDataText = gpsDataList.map((gpsData) => "${bluetoothDeviceNumber}/$baseName/${gpsData.latitude}/${gpsData.longitude}").join("\n");
+          fullGPSDataText += gpsDataText; // 모든 GPS 데이터를 하나의 문자열에 추가
 
-        fullGPSDataText += gpsDataText; // 모든 GPS 데이터를 하나의 문자열에 추가
+          // 지정된 형식으로 출력
+          gpsDataList.forEach((gpsData) {
+            print("✅ [DEBUG] $baseName/${gpsData.latitude}/${gpsData.longitude}");
+          });
 
-        // 지정된 형식으로 출력
-        gpsDataList.forEach((gpsData) {
-          print("✅ [DEBUG] $baseName/${gpsData.latitude}/${gpsData.longitude}");
-        });
-
-        // 마지막 데이터 수신 시간 갱신
-        lastDataReceivedTime = DateTime.now();
-      }
-
-      fullGPSDataText +="\n";
-    }, onDone: () async {
-      print("✅ [DEBUG] 스트림 완료");
-      _responseSubscription?.cancel();
-      isStreamClosed = true;
-    }, onError: (error) {
-      print("❌ [ERROR] 스트림 오류: $error");
-      _responseSubscription?.cancel();
-      isStreamClosed = true;
-    });
-
-    // 1초 동안 데이터가 수신되지 않으면 스트림을 종료
-    Timer.periodic(Duration(seconds: 1), (timer) async {
-      if (DateTime.now().difference(lastDataReceivedTime).inSeconds >= 1 && !isStreamClosed) {
-        await _responseSubscription?.cancel();
-        isStreamClosed = true;
-        timer.cancel();
-
-        print("✅ [DEBUG] 스트림 종료 후 데이터 업로드 시작");
-        final String filePath = "${imageUrl}${userCode}_$fileName.txt";
-        final response = await http.put(
-          Uri.parse(filePath),
-          headers: {"Content-Type": "text/plain"},
-          body: fullGPSDataText,
-        ).timeout(Duration(seconds: 30));
-
-        if (response.statusCode == 200) {
-          print("✅ [DEBUG] 텍스트 파일 저장 성공: ${imageUrl}");
-        } else {
-          print("❌ [ERROR] 텍스트 파일 저장 실패 (Status Code: ${response.statusCode}): ${imageUrl}");
-          print("❌ [ERROR] Response body: ${response.body}");
+          // 마지막 데이터 수신 시간 갱신
+          lastDataReceivedTime = DateTime.now();
         }
-      }
-    });
-  } catch (e) {
-    print("❌ [ERROR] 'read' 명령어 전송 중 오류 발생: $e");
-    await _responseSubscription?.cancel();
+
+        fullGPSDataText += "\n";
+      }, onDone: () async {
+        print("✅ [DEBUG] 스트림 완료");
+        _responseSubscription?.cancel();
+        isStreamClosed = true;
+      }, onError: (error) {
+        print("❌ [ERROR] 스트림 오류: $error");
+        _responseSubscription?.cancel();
+        isStreamClosed = true;
+      });
+
+      // 1초 동안 데이터가 수신되지 않으면 스트림을 종료
+      Timer.periodic(Duration(seconds: 1), (timer) async {
+        if (DateTime.now().difference(lastDataReceivedTime).inSeconds >= 1 && !isStreamClosed) {
+          await _responseSubscription?.cancel();
+          isStreamClosed = true;
+          timer.cancel();
+
+          print("✅ [DEBUG] 스트림 종료 후 데이터 업로드 시작");
+          final String filePath = "${imageUrl}${userCode}_$fileName.txt";
+          final response = await http.put(
+            Uri.parse(filePath),
+            headers: {"Content-Type": "text/plain"},
+            body: fullGPSDataText,
+          ).timeout(Duration(seconds: 30));
+
+          if (response.statusCode == 200) {
+            print("✅ [DEBUG] 텍스트 파일 저장 성공: ${imageUrl}");
+          } else {
+            print("❌ [ERROR] 텍스트 파일 저장 실패 (Status Code: ${response.statusCode}): ${imageUrl}");
+            print("❌ [ERROR] Response body: ${response.body}");
+          }
+        }
+      });
+    } catch (e) {
+      print("❌ [ERROR] 'read' 명령어 전송 중 오류 발생: $e");
+      await _responseSubscription?.cancel();
+    }
   }
-}
-
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Bluetooth Example')),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _adapterState == BluetoothAdapterState.on ? Icons.bluetooth : Icons.bluetooth_disabled,
-            color: _adapterState == BluetoothAdapterState.on ? Colors.blue : Colors.red,
-            size: 50,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _adapterState == BluetoothAdapterState.on ? "블루투스가 활성화되었습니다." : "블루투스가 꺼져있습니다.",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _adapterState == BluetoothAdapterState.on ? scanForDevices : null,
-            child: const Text('디바이스 검색'),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _scanResults.length,
-              itemBuilder: (context, index) {
-                final device = _scanResults[index].device;
-                return ListTile(
-                  leading: const Icon(Icons.bluetooth),
-                  title: Text(device.name.isNotEmpty ? device.name : 'Unknown Device'),
-                  subtitle: Text('ID: ${device.remoteId}'),
-                  onTap: () => connectToDevice(device),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: isDeviceConnected ? sendListCommand : null,
-            child: const Text('List 명령어 전송'),
-          ),
-          const SizedBox(height: 20),
-          Text('응답: $responseText'),
-        ],
+      body: Center(
+        child: isScanning
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text("기기를 찾는 중...", style: TextStyle(fontSize: 18)),
+                ],
+              )
+            : connectionStatus == "success"
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle, size: 100, color: Colors.green),
+                      SizedBox(height: 20),
+                      Text("기기가 연결되었습니다!", style: TextStyle(fontSize: 18)),
+                      ElevatedButton(
+                        onPressed: sendListCommand,
+                        child: Text("확인"),
+                      ),
+                    ],
+                  )
+                : connectionStatus == "failure"
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 100, color: Colors.grey),
+                          SizedBox(height: 20),
+                          Text("연결된 기기가 없습니다.", style: TextStyle(fontSize: 18)),
+                          ElevatedButton(
+                            onPressed: scanForDevices,
+                            child: Text("재확인"),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _adapterState == BluetoothAdapterState.on ? Icons.bluetooth : Icons.bluetooth_disabled,
+                            color: _adapterState == BluetoothAdapterState.on ? Colors.blue : Colors.red,
+                            size: 50,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            _adapterState == BluetoothAdapterState.on ? "블루투스가 활성화되었습니다." : "블루투스가 꺼져있습니다.",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _adapterState == BluetoothAdapterState.on ? scanForDevices : null,
+                            child: Text('디바이스 검색'),
+                          ),
+                          SizedBox(height: 20),
+                          Expanded(
+                            child: _scanResults.isEmpty
+                                ? Text("검색된 디바이스가 없습니다.")
+                                : ListView.builder(
+                                    itemCount: _scanResults.length,
+                                    itemBuilder: (context, index) {
+                                      final device = _scanResults[index].device;
+                                      return ListTile(
+                                        leading: Icon(Icons.bluetooth),
+                                        title: Text(device.name.isNotEmpty ? device.name : 'Unknown Device'),
+                                        subtitle: Text('ID: ${device.remoteId}'),
+                                        onTap: () => connectToDevice(device),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          SizedBox(height: 20),
+                          Text('응답: $responseText'),
+                        ],
+                      ),
       ),
     );
   }
@@ -401,7 +434,7 @@ String convertUTCtoTime(int utc) {
   int hours = (utc ~/ 10000) % 24; // 시 (24시간제)
   int minutes = (utc ~/ 100) % 100; // 분
   int seconds = utc % 100; // 초
-  return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
+  return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
 }
 
 double convertDMMtoDD(double dmm) {
