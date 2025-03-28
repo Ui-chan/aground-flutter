@@ -68,35 +68,35 @@ void scanForDevices() {
       _scanResults.clear();
     });
 
-    // 검색 시작 (timeout 제거)
+    // 검색 시작
     FlutterBluePlus.startScan();
 
     _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
       setState(() {
-        // "AGROUNDS_"로 시작하는 디바이스만 필터링
-        _scanResults = results.where((result) => result.device.name.startsWith("AGROUNDS_")).toList();
-      });
-
-      for (var result in _scanResults) {
-        print("🔍 [DEBUG] 발견된 디바이스: ${result.device.name} (ID: ${result.device.remoteId})");
-
-        // "AGROUNDS_"로 시작하는 디바이스를 찾으면 검색 중지
-        if (result.device.name.startsWith("AGROUNDS_")) {
-          print("✅ [DEBUG] 목표 디바이스 발견: ${result.device.name}");
-          FlutterBluePlus.stopScan(); // 검색 중지
-          _scanResultsSubscription?.cancel();
-          break;
+        for (var result in results) {
+          // "AGROUNDS_"로 시작하는 디바이스만 필터링
+          if (result.device.name.startsWith("AGROUNDS_")) {
+            // 중복 여부 확인 후 추가
+            if (!_scanResults.any((r) => r.device.remoteId == result.device.remoteId)) {
+              _scanResults.add(result);
+              print("🔍 [DEBUG] 발견된 디바이스: ${result.device.name} (ID: ${result.device.remoteId})");
+            }
+          }
         }
-      }
+      });
     });
 
-    FlutterBluePlus.isScanning.where((isScanning) => !isScanning).first.then((_) {
+    // 예: 10초 후 검색 종료
+    Future.delayed(const Duration(seconds: 10)).then((_) {
+      FlutterBluePlus.stopScan();
+      _scanResultsSubscription?.cancel();
       print("✅ [DEBUG] 블루투스 검색 완료. 총 ${_scanResults.length}개 디바이스 발견됨.");
     });
   } catch (e) {
     print("❌ [ERROR] 블루투스 검색 중 오류 발생: $e");
   }
 }
+
 
 
 
