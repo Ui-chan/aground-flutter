@@ -26,6 +26,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
   StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
   List<ScanResult> _scanResults = [];
   BluetoothDevice? _connectedDevice;
+  BluetoothDevice? selectedDevice; // 선택된 디바이스 저장
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _responseCharacteristic;
   String responseText = "No response yet";
@@ -115,6 +116,8 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
       await device.connect();
       setState(() {
+        selectedDevice = device; // 선택된 디바이스 저장
+  
         _connectedDevice = device;
         isDeviceConnected = true;
         connectionStatus = "success";
@@ -335,89 +338,228 @@ class _BluetoothPageState extends State<BluetoothPage> {
       await _responseSubscription?.cancel();
     }
   }
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Bluetooth Example'),
+    ),
+    body: Stack(
+      alignment: Alignment.center,
+      children: [
+        // 메인 콘텐츠
+        Center(
+          child: isScanning
+              ? Column(
+                  mainAxisSize: MainAxisSize.min, // 콘텐츠를 중앙에 배치
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/effect.png',
+                          width: 200, // 크기 조정
+                          height: 200, // 크기 조정
+                        ),
+                        Image.asset(
+                          'assets/images/device.png',
+                          width: 85,
+                          height: 90,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 40),
+                    Text("기기를 찾는 중...", style: TextStyle(fontSize: 18)),
+                    SizedBox(height: 20),
+                    CircularProgressIndicator(),
+                  ],
+                )
+              : connectionStatus == "success"
+? Stack(
+        children: [
+          // 배경 이미지
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/bg_gradient.png',
+              fit: BoxFit.cover, // 화면을 채우도록 설정
+            ),
+          ),
+          // ringeffect 이미지를 중앙에 배치하고 양옆 50% 잘라내기
+          Center(
+            child: ClipRect(
+              child: Align(
+                alignment: Alignment.center,
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Bluetooth Example')),
-      body: Center(
-        child: isScanning
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                child: Image.asset(
+                  'assets/images/ringeffect.png',
+                  height: 200, // 높이 설정
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          // 하단 텍스트와 버튼을 이미지 아래로 배치
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 50), // 버튼과 텍스트 위치 조정
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 20),
-                  Text("기기를 찾는 중...", style: TextStyle(fontSize: 18)),
-                ],
-              )
-            : connectionStatus == "success"
-                ? Column(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, size: 100, color: Colors.green),
-                      SizedBox(height: 20),
-                      Text("기기가 연결되었습니다!", style: TextStyle(fontSize: 18)),
-                      ElevatedButton(
-                        onPressed: sendListCommand,
-                        child: Text("확인"),
+                      Icon(Icons.check_circle, color: Colors.green, size: 24), // 성공 아이콘
+                      SizedBox(width: 8), // 아이콘과 텍스트 간격
+                      Text(
+                        "기기가 연결되었습니다!",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black, // 텍스트 색상 설정
+                        ),
                       ),
                     ],
-                  )
-                : connectionStatus == "failure"
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 100, color: Colors.grey),
-                          SizedBox(height: 20),
-                          Text("연결된 기기가 없습니다.", style: TextStyle(fontSize: 18)),
-                          ElevatedButton(
-                            onPressed: scanForDevices,
-                            child: Text("재확인"),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _adapterState == BluetoothAdapterState.on ? Icons.bluetooth : Icons.bluetooth_disabled,
-                            color: _adapterState == BluetoothAdapterState.on ? Colors.blue : Colors.red,
-                            size: 50,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            _adapterState == BluetoothAdapterState.on ? "블루투스가 활성화되었습니다." : "블루투스가 꺼져있습니다.",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _adapterState == BluetoothAdapterState.on ? scanForDevices : null,
-                            child: Text('디바이스 검색'),
-                          ),
-                          SizedBox(height: 20),
-                          Expanded(
-                            child: _scanResults.isEmpty
-                                ? Text("검색된 디바이스가 없습니다.")
-                                : ListView.builder(
-                                    itemCount: _scanResults.length,
-                                    itemBuilder: (context, index) {
-                                      final device = _scanResults[index].device;
-                                      return ListTile(
-                                        leading: Icon(Icons.bluetooth),
-                                        title: Text(device.name.isNotEmpty ? device.name : 'Unknown Device'),
-                                        subtitle: Text('ID: ${device.remoteId}'),
-                                        onTap: () => connectToDevice(device),
-                                      );
-                                    },
-                                  ),
-                          ),
-                          SizedBox(height: 20),
-                          Text('응답: $responseText'),
-                        ],
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    selectedDevice?.name ?? "알 수 없는 기기", // 연결된 블루투스 기기 이름 표시
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: sendListCommand, // 버튼 클릭 시 동작 추가
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black, // 버튼 색상 설정
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 40, vertical: 12), // 버튼 크기 설정
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(20), // 둥근 모서리 버튼 스타일
                       ),
-      ),
-    );
-  }
+                    ),
+                    child: Text(
+                      "데이터 선택",
+                      style:
+                          TextStyle(color: Colors.white, fontSize: 16), // 버튼 텍스트 스타일
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      )
+                  : connectionStatus == "failure"
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min, // 콘텐츠를 중앙에 배치
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // 가운데 이미지
+                            SizedBox(height: 10), // 이미지와 텍스트 간격
+                            Image.asset(
+                              'assets/images/emptydevice.png',
+                              width: 85, // 이미지 크기 설정
+                              height: 90,
+                            ),
+                            SizedBox(height: 30), // 이미지와 텍스트 간격
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.grey, size: 20), // 경고 아이콘
+                                SizedBox(width: 8), // 아이콘과 텍스트 간격
+                                Text(
+                                  "연결된 기기가 없습니다.",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600], // 텍스트 색상
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 30), // 텍스트와 버튼 간격
+                            ElevatedButton(
+                              onPressed: scanForDevices, // 디바이스 검색 함수 호출
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black, // 버튼 색상 설정
+                                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20), // 둥근 모서리 버튼
+                                ),
+                              ),
+                              child: Text(
+                                "재확인",
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min, // 콘텐츠를 중앙에 배치
+                          mainAxisAlignment: MainAxisAlignment.center, // 세로 방향으로 중앙 정렬
+                          crossAxisAlignment: CrossAxisAlignment.center, // 가로 방향으로 중앙 정렬
+                          children: [
+                            SizedBox(height: 70), // 화면 전체적으로 아래로 이동시키기 위한 여백 추가
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/images/effect.png',
+                                  width: 200, // 크기 조정
+                                  height: 200, // 크기 조정
+                                ),
+                                Image.asset(
+                                  'assets/images/device.png',
+                                  width: 85,
+                                  height: 90,
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 40), // 간격 조정
+                            Text(
+                              _adapterState == BluetoothAdapterState.on
+                                  ? "블루투스가 활성화되었습니다."
+                                  : "블루투스가 꺼져있습니다.",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 20), // 간격 조정
+                            ElevatedButton(
+                              onPressed:
+                                  _adapterState == BluetoothAdapterState.on ? scanForDevices : null,
+                              child: Text('디바이스 검색'),
+                            ),
+                            SizedBox(height: 20), // 간격 조정
+                            if (_scanResults.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              )
+                            else
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: _scanResults.length,
+                                  itemBuilder: (context, index) {
+                                    final device = _scanResults[index].device;
+                                    return ListTile(
+                                      leading: Icon(Icons.bluetooth),
+                                      title: Text(device.name.isNotEmpty ? device.name : 'Unknown Device'),
+                                      // subtitle 제거
+                                      onTap: () => connectToDevice(device),
+                                    );
+                                  },
+                                ),
+                              ),
+                            SizedBox(height: 20), // 간격 조정
+                          ],
+                        )
+
+        ),
+      ],
+    ),
+  );
+}
 }
 
 /// 📌 GPS 데이터 클래스
