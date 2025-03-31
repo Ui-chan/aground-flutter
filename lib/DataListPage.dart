@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'BluetoothPage.dart'; // BluetoothPage를 import합니다.
 class DataListPage extends StatelessWidget {
   final List<String> fileList;
-  final Function(String) sendReadCommand;
+  final Function(String fileName, String endTimeString) sendReadCommand;
+
 
   const DataListPage({Key? key, required this.fileList, required this.sendReadCommand}) : super(key: key);
 
@@ -65,7 +66,7 @@ class DataListPage extends StatelessWidget {
                         final parts = fileName.split('|');
                         final startTimeString = parts[0].substring(0, 12);
                         final endTimeString = parts[1];
-
+                        
                         final startTime = parseFileTime(startTimeString);
                         final endTime = parseFileTime(endTimeString);
 
@@ -75,6 +76,7 @@ class DataListPage extends StatelessWidget {
                           onTap: () {
                             showDialog(
                               context: context,
+                              
                               builder: (BuildContext context) {
                                 return AlertDialog(
                                   title: const Text('파일 정보'),
@@ -99,8 +101,10 @@ class DataListPage extends StatelessWidget {
                                       child: const Text('전송'),
                                       onPressed: () {
                                         if (playDuration >= 2) {
+                                          print("endTimeString: " + endTimeString);
                                           Navigator.of(context).pop();
-                                          sendReadCommand(parts[0].split('.').first);
+                                          sendReadCommand(parts[0].split('.').first,endTimeString);
+                                          
                                         } else {
                                           Navigator.of(context).pop();
                                           showDialog(

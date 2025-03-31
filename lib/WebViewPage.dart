@@ -44,7 +44,7 @@ class _WebViewPageState extends State<WebViewPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => BluetoothPage(imageUrl: imageUrl, userCode: userCode),
+                builder: (context) => BluetoothPage(imageUrl: imageUrl, userCode: userCode, matchCode: matchCode),
                 
               ),
             );

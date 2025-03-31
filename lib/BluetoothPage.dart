@@ -14,8 +14,14 @@ StreamSubscription<List<int>>? _responseSubscription;
 class BluetoothPage extends StatefulWidget {
   final String? imageUrl; // WebViewPage에서 받아올 imageUrl
   final String? userCode; // WebViewPage에서 받아올 userCode
+  final String? matchCode; // WebViewPage에서 받아올 matchCode
 
-  const BluetoothPage({Key? key, this.imageUrl, this.userCode}) : super(key: key);
+  const BluetoothPage({
+    Key? key,
+    this.imageUrl,
+    this.userCode,
+    this.matchCode, // matchCode를 생성자에 추가
+  }) : super(key: key);
 
   @override
   _BluetoothPageState createState() => _BluetoothPageState();
@@ -252,7 +258,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-Future<void> sendReadCommand(String fileName) async {
+Future<void> sendReadCommand(String fileName, String endTimeString) async {
   if (_connectedDevice == null || _commandCharacteristic == null || _responseCharacteristic == null) {
     print("❌ [ERROR] 블루투스 연결 또는 특성이 설정되지 않았습니다.");
     return;
@@ -261,13 +267,14 @@ Future<void> sendReadCommand(String fileName) async {
   String fullGPSDataText = ""; // 모든 GPS 데이터를 저장할 변수
   String? imageUrl = widget.imageUrl;
   String? userCode = widget.userCode;
+  String? matchCode = widget.matchCode;
 
   try {
     final command = "read,/$fileName.bin"; // 파일 확장자 다시 추가
     print("🔵 [DEBUG] '$command' 명령어 전송 중...");
     await _commandCharacteristic!.write(utf8.encode(command));
 
-    // 이전에 구독중인 스트림이 있다면 취소
+    // 이전에 구독 중인 스트림이 있다면 취소
     await _responseSubscription?.cancel();
 
     // 마지막 데이터 수신 시간을 기록할 변수
@@ -333,6 +340,14 @@ Future<void> sendReadCommand(String fileName) async {
 
         if (response.statusCode == 200) {
           print("✅ [DEBUG] 텍스트 파일 저장 성공: ${imageUrl}");
+
+          // URL 생성
+          final url =
+              'https://agrounds.com/app/findstadium?user_code=$userCode&match_code=$matchCode&start_time=20$fileName&end_time=20$endTimeString&url=$imageUrl';
+
+          // URL 출력
+          print("✅ [DEBUG] 리다이렉션 URL: $url");
+
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -345,7 +360,9 @@ Future<void> sendReadCommand(String fileName) async {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ReWebViewPage(), // ReWebViewPage로 이동
+                        builder: (context) => ReWebViewPage(
+                          url: url, // 생성한 URL 전달
+                        ),
                       ),
                     );
                   },
@@ -354,10 +371,9 @@ Future<void> sendReadCommand(String fileName) async {
               ],
             ),
           );
-
-
         } else {
-          print("❌ [ERROR] 텍스트 파일 저장 실패 (Status Code: ${response.statusCode}): ${imageUrl}");
+          print(
+              "❌ [ERROR] 텍스트 파일 저장 실패 (Status Code: ${response.statusCode}): ${imageUrl}");
           print("❌ [ERROR] Response body: ${response.body}");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("❌ 파일 저장 실패"), backgroundColor: Colors.red),
@@ -371,6 +387,7 @@ Future<void> sendReadCommand(String fileName) async {
     await _responseSubscription?.cancel();
   }
 }
+
 
 
 
