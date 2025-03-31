@@ -68,13 +68,11 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/effect.png
-    - assets/images/device.png
     - assets/images/emptydevice.png
-    - assets/images/succesdevice.png
     - assets/images/bg_gradient.png
-    - assets/images/ringeffect.png
-    - assets/images/ring2.png
+    - assets/images/successdevice.png
+    - assets/images/effectdevice.png
+    
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

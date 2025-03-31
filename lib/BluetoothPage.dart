@@ -338,120 +338,117 @@ class _BluetoothPageState extends State<BluetoothPage> {
       await _responseSubscription?.cancel();
     }
   }
+
+
 @override
 Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+  final double appBarHeight = AppBar().preferredSize.height;
   return Scaffold(
     appBar: AppBar(
-      title: const Text('Bluetooth Example'),
+      title: const Text('기기 연결'),
     ),
-    body: Stack(
+  body: Stack(
       alignment: Alignment.center,
       children: [
-        // 메인 콘텐츠
         Center(
           child: isScanning
               ? Column(
-                  mainAxisSize: MainAxisSize.min, // 콘텐츠를 중앙에 배치
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+                          mainAxisSize: MainAxisSize.min, // 콘텐츠를 중앙에 배치
+                          mainAxisAlignment: MainAxisAlignment.center, // 세로 방향으로 중앙 정렬
+                          crossAxisAlignment: CrossAxisAlignment.center, // 가로 방향으로 중앙 정렬
+                          children: [
                     Stack(
                       alignment: Alignment.center,
                       children: [
                         Image.asset(
-                          'assets/images/effect.png',
-                          width: 200, // 크기 조정
-                          height: 200, // 크기 조정
-                        ),
-                        Image.asset(
-                          'assets/images/device.png',
-                          width: 85,
-                          height: 90,
+                          'assets/images/effectdevice.png', // 이미지 변경
+                          width: 300, // 크기 조정
+                          height: 300, // 크기 조정
                         ),
                       ],
                     ),
-                    SizedBox(height: 40),
-                    Text("기기를 찾는 중...", style: TextStyle(fontSize: 18)),
+                    SizedBox(height: 40), // 이미지와 텍스트 간격 조정
+                    Text("기기를 찾는 중...", style:TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                    ),
                     SizedBox(height: 20),
                     CircularProgressIndicator(),
+                    SizedBox(height: 52), 
                   ],
                 )
               : connectionStatus == "success"
-? Stack(
-        children: [
-          // 배경 이미지
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/bg_gradient.png',
-              fit: BoxFit.cover, // 화면을 채우도록 설정
-            ),
-          ),
-          // ringeffect 이미지를 중앙에 배치하고 양옆 50% 잘라내기
-          Center(
-            child: ClipRect(
-              child: Align(
-                alignment: Alignment.center,
-
-                child: Image.asset(
-                  'assets/images/ringeffect.png',
-                  height: 200, // 높이 설정
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          // 하단 텍스트와 버튼을 이미지 아래로 배치
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 50), // 버튼과 텍스트 위치 조정
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green, size: 24), // 성공 아이콘
-                      SizedBox(width: 8), // 아이콘과 텍스트 간격
-                      Text(
-                        "기기가 연결되었습니다!",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black, // 텍스트 색상 설정
+                ? Stack(
+                  children: [
+                    // 배경 이미지
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/bg_gradient.png',
+                        fit: BoxFit.cover, // 화면을 채우도록 설정
+                      ),
+                    ),
+                    // ringtest 이미지를 화면 중앙에 배치
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center, // 중앙 정렬
+                      children: [
+                        Center(
+                          child: Image.asset(
+                            'assets/images/successdevice.png',
+                            width: 230, // 이미지 크기 설정
+                            height: 230, // 이미지 크기 설정
+                            fit: BoxFit.contain, // 이미지가 잘리지 않도록 설정
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    selectedDevice?.name ?? "알 수 없는 기기", // 연결된 블루투스 기기 이름 표시
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: sendListCommand, // 버튼 클릭 시 동작 추가
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black, // 버튼 색상 설정
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 40, vertical: 12), // 버튼 크기 설정
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(20), // 둥근 모서리 버튼 스타일
-                      ),
+                        SizedBox(height: 30), // 이미지와 텍스트 간격 조정
+                        // 텍스트와 버튼을 이미지 아래로 배치
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green, size: 24), // 성공 아이콘
+                                SizedBox(width: 8), // 아이콘과 텍스트 간격
+                                Text(
+                                  "기기가 연결되었습니다!",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black, // 텍스트 색상 설정
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              selectedDevice?.name ?? "알 수 없는 기기", // 연결된 블루투스 기기 이름 표시
+                              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                            ),
+                            SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: sendListCommand, // 버튼 클릭 시 동작 추가
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black, // 버튼 색상 설정
+                                padding:
+                                    EdgeInsets.symmetric(horizontal: 40, vertical: 12), // 버튼 크기 설정
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(20), // 둥근 모서리 버튼 스타일
+                                ),
+                              ),
+                              child: Text(
+                                "데이터 선택",
+                                style:
+                                    TextStyle(color: Colors.white, fontSize: 16), // 버튼 텍스트 스타일
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      "데이터 선택",
-                      style:
-                          TextStyle(color: Colors.white, fontSize: 16), // 버튼 텍스트 스타일
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      )
+                  ],
+                )
+
+
                   : connectionStatus == "failure"
                       ? Column(
                           mainAxisSize: MainAxisSize.min, // 콘텐츠를 중앙에 배치
@@ -502,22 +499,16 @@ Widget build(BuildContext context) {
                           mainAxisAlignment: MainAxisAlignment.center, // 세로 방향으로 중앙 정렬
                           crossAxisAlignment: CrossAxisAlignment.center, // 가로 방향으로 중앙 정렬
                           children: [
-                            SizedBox(height: 70), // 화면 전체적으로 아래로 이동시키기 위한 여백 추가
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Image.asset(
-                                  'assets/images/effect.png',
-                                  width: 200, // 크기 조정
-                                  height: 200, // 크기 조정
-                                ),
-                                Image.asset(
-                                  'assets/images/device.png',
-                                  width: 85,
-                                  height: 90,
-                                ),
-                              ],
-                            ),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/effectdevice.png', // 이미지 변경
+                          width: 300, // 크기 조정
+                          height: 300, // 크기 조정
+                        ),
+                      ],
+                    ),
                             SizedBox(height: 40), // 간격 조정
                             Text(
                               _adapterState == BluetoothAdapterState.on
@@ -531,7 +522,7 @@ Widget build(BuildContext context) {
                                   _adapterState == BluetoothAdapterState.on ? scanForDevices : null,
                               child: Text('디바이스 검색'),
                             ),
-                            SizedBox(height: 20), // 간격 조정
+                            // SizedBox(height: 20), // 간격 조정
                             if (_scanResults.isEmpty)
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 10),
