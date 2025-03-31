@@ -98,8 +98,31 @@ class DataListPage extends StatelessWidget {
                                     TextButton(
                                       child: const Text('전송'),
                                       onPressed: () {
-                                        Navigator.of(context).pop();
-                                        sendReadCommand(parts[0].split('.').first);
+                                        if (playDuration >= 2) {
+                                          Navigator.of(context).pop();
+                                          sendReadCommand(parts[0].split('.').first);
+                                        } else {
+                                          Navigator.of(context).pop();
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title:
+                                                    const Text('전송 불가', style: TextStyle(color: Colors.red)),
+                                                content:
+                                                    const Text('플레이 시간이 2분 이상이여야 전송할 수 있습니다.'),
+                                                actions: <Widget>[
+                                                  TextButton(
+                                                    child:
+                                                        const Text('확인'),
+                                                    onPressed:
+                                                        () => Navigator.of(context).pop(),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        }
                                       },
                                     ),
                                   ],
