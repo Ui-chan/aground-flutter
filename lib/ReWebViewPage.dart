@@ -13,10 +13,11 @@ class ReWebViewPage extends StatelessWidget {
       ..loadRequest(Uri.parse(url)); // 전달받은 URL 로드
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text("웹 페이지"),
+      body: PopScope(
+        canPop: false, // 뒤로가기 제스처를 비활성화
+        child: WebViewWidget(controller: controller), // WebView 화면
       ),
-      body: WebViewWidget(controller: controller),
     );
   }
 }
+ 
