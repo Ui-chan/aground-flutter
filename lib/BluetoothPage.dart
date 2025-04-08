@@ -300,7 +300,7 @@ Future<void> sendReadCommand(String fileName, String endTimeString) async {
 
         String? bluetoothDeviceNumber = _bluetoothDeviceNumber;
 
-        String gpsDataText = gpsDataList.map((gpsData) => "${bluetoothDeviceNumber}/$baseName/${gpsData.latitude}/${gpsData.longitude}").join("\n");
+        String gpsDataText = gpsDataList.map((gpsData) => "${bluetoothDeviceNumber}/${gpsData.utc}/${gpsData.latitude}/${gpsData.longitude}").join("\n");
 
         fullGPSDataText += gpsDataText;
 
@@ -329,7 +329,7 @@ Future<void> sendReadCommand(String fileName, String endTimeString) async {
         timer.cancel();
 
         print("✅ [DEBUG] 스트림 종료 후 데이터 업로드 시작");
-        final String filePath = "${imageUrl}${userCode}_$fileName.txt";
+        final String filePath = "${imageUrl}${userCode}_${matchCode}_$fileName.txt";
         final response = await http.put(
           Uri.parse(filePath),
           headers: {"Content-Type": "text/plain"},
@@ -616,7 +616,7 @@ String convertUTCtoTime(int utc) {
   int hours = (utc ~/ 10000) % 24; // 시 (24시간제)
   int minutes = (utc ~/ 100) % 100; // 분
   int seconds = utc % 100; // 초
-  return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+  return "${hours.toString().padLeft(2, '0')}${minutes.toString().padLeft(2, '0')}${seconds.toString().padLeft(2, '0')}";
 }
 
 double convertDMMtoDD(double dmm) {
