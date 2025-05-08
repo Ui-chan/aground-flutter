@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:aground/BluetoothPage.dart'; // BluetoothPage import
+import 'package:aground/BluetoothPage.dart';
 
 class WebViewPage extends StatefulWidget {
   final Function(BuildContext) onBluetoothRequest;
@@ -21,8 +21,14 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   void initState() {
     super.initState();
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          // 필요시 콜백 추가
+        ),
+      )
       ..addJavaScriptChannel(
         'UploadChannel',
         onMessageReceived: (JavaScriptMessage message) {
@@ -38,26 +44,31 @@ class _WebViewPageState extends State<WebViewPage> {
           print('Match Code: $matchCode');
           print('Image URL: $imageUrl');
 
-          // user_code가 존재하는 경우에만 블루투스 화면으로 전환 요청
           if (userCode != null) {
-            // BluetoothPage로 imageUrl 전달
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => BluetoothPage(imageUrl: imageUrl, userCode: userCode, matchCode: matchCode),
-                
+                builder: (context) => BluetoothPage(
+                  imageUrl: imageUrl,
+                  userCode: userCode,
+                  matchCode: matchCode,
+                ),
               ),
             );
           }
         },
-      )
-      ..loadRequest(Uri.parse('https://agrounds.com/app/'));
+      );
+
+    // loadRequest 이후에 enableZoom(false) 호출
+    _controller.loadRequest(Uri.parse('https://agrounds.com/app/')).then((_) {
+      _controller.enableZoom(false);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: WebViewWidget(controller: _controller), // AppBar 제거
+      body: WebViewWidget(controller: _controller),
     );
   }
 }

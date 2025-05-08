@@ -21,9 +21,9 @@ PODS:
     - AWSS3
     - FileMD5Hash (~> 2.0)
     - Flutter
-  - AWSCore (2.40.1)
-  - AWSS3 (2.40.1):
-    - AWSCore (= 2.40.1)
+  - AWSCore (2.40.2)
+  - AWSS3 (2.40.2):
+    - AWSCore (= 2.40.2)
   - FileMD5Hash (2.0.0)
   - Flutter (1.0.0)
   - flutter_blue_plus_darwin (0.0.2):
@@ -74,15 +74,15 @@ SPEC CHECKSUMS:
   AFNetworking: 3bd23d814e976cd148d7d44c3ab78017b744cd58
   amplify_secure_storage: 3edc30177ffefbcee786c408a21c02f8ab9f168e
   aws_s3_ios: d6cc205b39802025cf4d43cf7927159e13816ef0
-  AWSCore: 29c85b2be07489b459cc17060b6354e9ba0f96a0
-  AWSS3: 29e7d0e5d77af1ce97c91424d7b86aa1b0bf69b6
+  AWSCore: 3d4b9508d6bc57d83d4efd44044e726dfd6c0cd1
+  AWSS3: 20c6f122e962cdf6ddaf60f52422bb94da584026
   FileMD5Hash: 3ed69cc19a21ff4d30ae8833fc104275ad2c7de0
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_blue_plus_darwin: 09444a26fb6bdef523e55b68fc1c59af5a877ea6
+  flutter_blue_plus_darwin: 20a08bfeaa0f7804d524858d3d8744bcc1b6dbc3
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   webview_flutter_wkwebview: 1821ceac936eba6f7984d89a9f3bcb4dea99ebb2
 
-PODFILE CHECKSUM: a57f30d18f102dd3ce366b1d62a55ecbef2158e5
+PODFILE CHECKSUM: 0a7d5b7d0e53420cb0284f7b2f171f93843b94d2
 
 COCOAPODS: 1.16.2

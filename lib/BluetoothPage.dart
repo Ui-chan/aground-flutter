@@ -390,7 +390,6 @@ Future<void> sendReadCommand(String fileName, String endTimeString) async {
 
 
 
-
 @override
 Widget build(BuildContext context) {
   return Scaffold(
